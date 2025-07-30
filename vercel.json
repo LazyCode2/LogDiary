@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/home.html" }
+  ],
+  "public": true
+} 

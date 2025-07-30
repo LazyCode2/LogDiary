@@ -1,0 +1,16 @@
+{
+  "name": "logDiary",
+  "short_name": "logDiary",
+  "description": "A minimal, professional project log and diary app.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#232323",
+  "theme_color": "#232323",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+} 
