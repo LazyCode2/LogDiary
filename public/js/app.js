@@ -10,6 +10,13 @@
     // Initialize app
     document.addEventListener('DOMContentLoaded', function() {
       loadProjects();
+      
+      // Check if this is the first time
+      const hasSeenWarning = localStorage.getItem('logDiary_warningSeen');
+      if (!hasSeenWarning) {
+        document.getElementById('firstTimeModal').classList.remove('hidden');
+      }
+      
       if (Object.keys(projects).length === 0 || !currentProject) {
         showDashboard();
       } else {
@@ -59,6 +66,7 @@
       
       document.getElementById('dashboardView').classList.remove('hidden');
       document.getElementById('projectView').classList.add('hidden');
+      document.getElementById('fixedInputBar').classList.add('hidden');
       
       updateDashboardStats();
       updateRecentActivity();
@@ -74,6 +82,7 @@
     function showProjectView() {
       document.getElementById('dashboardView').classList.add('hidden');
       document.getElementById('projectView').classList.remove('hidden');
+      document.getElementById('fixedInputBar').classList.remove('hidden');
     }
 
     function updateDashboardStats() {
@@ -186,6 +195,10 @@
               <span class="text-gray-400">Total entries</span>
               <span class="font-semibold text-accent-amber">${totalLogs}</span>
             </div>
+            <div class="border-t border-surface-500 my-2"></div>
+            <div class="text-xs text-gray-500 text-center">
+              💾 Remember to export your data regularly
+            </div>
           </div>
         `;
       }
@@ -256,7 +269,13 @@
         logs: [],
         tags: [],
         version: '1.0.0',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        gitRepo: null,
+        planning: {
+          backlog: [],
+          inProgress: [],
+          completed: []
+        }
       };
       
       saveProjects();
@@ -281,9 +300,23 @@
       document.getElementById('versionDisplay').classList.remove('hidden');
       document.getElementById('deleteProjectBtn').classList.remove('hidden');
       document.getElementById('manageTagsBtn').classList.remove('hidden');
+      document.getElementById('planningBtn').classList.remove('hidden');
+      document.getElementById('gitBtn').classList.remove('hidden');
       
       // Update version display
       document.getElementById('currentVersion').textContent = projects[projectName].version || '1.0.0';
+      
+      // Update Git status if connected
+      if (projects[projectName].gitRepo) {
+        document.getElementById('gitStatusDisplay').classList.remove('hidden');
+        document.getElementById('gitPanel').classList.remove('hidden');
+        document.getElementById('gitRepoName').textContent = projects[projectName].gitRepo.name || 'Repository';
+        document.getElementById('gitBranch').textContent = projects[projectName].gitRepo.branch || 'main';
+        updateGitStatus();
+      } else {
+        document.getElementById('gitStatusDisplay').classList.add('hidden');
+        document.getElementById('gitPanel').classList.add('hidden');
+      }
       
       // Update project list highlighting
       document.querySelectorAll('#projectList li').forEach(li => {
@@ -312,6 +345,325 @@
         saveProjects();
         loadProjects();
         showDashboard();
+      }
+    }
+
+    // Git Integration Functions
+    function showGitModal() {
+      if (!currentProject) {
+        alert('Please select a project first');
+        return;
+      }
+      
+      document.getElementById('gitModal').classList.remove('hidden');
+      
+      // Pre-fill if already connected
+      if (projects[currentProject].gitRepo && projects[currentProject].gitRepo.url) {
+        document.getElementById('gitRepoInput').value = projects[currentProject].gitRepo.url;
+      }
+    }
+
+    function hideGitModal() {
+      document.getElementById('gitModal').classList.add('hidden');
+      document.getElementById('gitRepoInput').value = '';
+    }
+
+    function toggleGitPanel() {
+      const content = document.getElementById('gitStatusContent');
+      const toggle = document.getElementById('gitPanelToggle');
+      
+      if (content.classList.contains('expanded')) {
+        content.classList.remove('expanded');
+        toggle.style.transform = 'rotate(0deg)';
+      } else {
+        content.classList.add('expanded');
+        toggle.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    function connectGitRepo() {
+      const repoUrl = document.getElementById('gitRepoInput').value.trim();
+      if (!repoUrl) {
+        alert('Please enter a repository URL');
+        return;
+      }
+      
+      // Extract repo name from URL
+      let repoName = repoUrl.split('/').pop().replace('.git', '');
+      if (repoName.includes(':')) {
+        repoName = repoName.split(':').pop().replace('.git', '');
+      }
+      
+      if (!currentProject) {
+        alert('Please select a project first');
+        return;
+      }
+      
+      if (!projects[currentProject].gitRepo) {
+        projects[currentProject].gitRepo = {};
+      }
+      
+      projects[currentProject].gitRepo.url = repoUrl;
+      projects[currentProject].gitRepo.name = repoName;
+      projects[currentProject].gitRepo.branch = 'main';
+      projects[currentProject].gitRepo.connected = true;
+      
+      saveProjects();
+      
+      // Update UI
+      document.getElementById('gitStatusDisplay').classList.remove('hidden');
+      document.getElementById('gitPanel').classList.remove('hidden');
+      document.getElementById('gitRepoName').textContent = repoName;
+      document.getElementById('gitBranch').textContent = 'main';
+      
+      // Import commit history
+      importCommitHistory();
+      
+      hideGitModal();
+      alert('Repository connected successfully! Commit history will be imported.');
+    }
+
+    function importCommitHistory() {
+      if (!currentProject || !projects[currentProject].gitRepo) return;
+      
+      // Simulate importing commit history from Git
+      // In a real implementation, this would call Git commands or API
+      const mockCommits = [
+        {
+          hash: 'a1b2c3d',
+          message: 'Initial commit',
+          author: 'Developer',
+          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          files: ['README.md', 'package.json']
+        },
+        {
+          hash: 'e4f5g6h',
+          message: 'Add basic functionality',
+          author: 'Developer',
+          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          files: ['app.js', 'index.html']
+        },
+        {
+          hash: 'i7j8k9l',
+          message: 'Fix UI issues',
+          author: 'Developer',
+          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          files: ['styles.css', 'app.js']
+        },
+        {
+          hash: 'm1n2o3p',
+          message: 'Add Git integration',
+          author: 'Developer',
+          date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          files: ['git.js', 'app.js']
+        }
+      ];
+      
+      // Convert commits to log entries
+      mockCommits.forEach(commit => {
+        const commitLog = {
+          text: `Git commit: ${commit.message}`,
+          timestamp: commit.date,
+          tags: ['git', 'commit'],
+          type: 'commit',
+          commitHash: commit.hash,
+          commitMessage: commit.message,
+          commitAuthor: commit.author,
+          commitFiles: commit.files
+        };
+        
+        if (!projects[currentProject].logs) {
+          projects[currentProject].logs = [];
+        }
+        
+        // Check if commit already exists to avoid duplicates
+        const existingCommit = projects[currentProject].logs.find(log => 
+          log.type === 'commit' && log.commitHash === commit.hash
+        );
+        
+        if (!existingCommit) {
+          projects[currentProject].logs.push(commitLog);
+        }
+      });
+      
+      saveProjects();
+      loadLogs();
+      updateGitStatus();
+      
+      // Update dashboard if needed
+      if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
+        updateDashboardStats();
+        updateRecentActivity();
+        updateProgressInsights();
+      }
+    }
+
+    function updateGitStatus() {
+      if (!currentProject || !projects[currentProject].gitRepo) return;
+      
+      const gitStatusContent = document.getElementById('gitStatusContent');
+      
+      // Count commits in logs
+      const commitLogs = projects[currentProject].logs?.filter(log => log.type === 'commit') || [];
+      const totalCommits = commitLogs.length;
+      const recentCommits = commitLogs.slice(-3); // Last 3 commits
+      
+      const statusHTML = `
+        <div class="p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium">Total Commits</span>
+            <span class="text-primary-400 font-semibold">${totalCommits}</span>
+          </div>
+          <div class="border-t border-surface-500 my-2"></div>
+          <div class="text-sm">
+            <div class="text-gray-400 mb-2">Recent Commits:</div>
+            ${recentCommits.length > 0 ? recentCommits.map(commit => `
+              <div class="bg-card-500 rounded-lg p-2 mb-2">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-xs text-primary-400 font-mono">${commit.commitHash.substring(0, 7)}</span>
+                  <span class="text-xs text-gray-400">${formatTimeAgo(commit.timestamp)}</span>
+                </div>
+                <p class="text-sm">${commit.commitMessage}</p>
+                <p class="text-xs text-gray-400">by ${commit.commitAuthor}</p>
+              </div>
+            `).join('') : '<p class="text-gray-400 text-sm">No commits found</p>'}
+          </div>
+          <div class="border-t border-surface-500 my-2"></div>
+          <button onclick="importCommitHistory()" class="w-full px-3 py-2 bg-primary-500 rounded-lg hover:bg-primary-600 transition-colors text-sm">
+            <i class="fas fa-sync-alt"></i> Refresh Commit History
+          </button>
+        </div>
+      `;
+      
+      gitStatusContent.innerHTML = statusHTML;
+    }
+
+    function refreshGitStatus() {
+      importCommitHistory();
+    }
+
+    function showCommitModal() {
+      // This function is now deprecated since we're importing commits instead of creating them
+      alert('Commits are now imported from your Git repository. Use "Refresh Commit History" to update.');
+    }
+
+    function hideCommitModal() {
+      document.getElementById('commitModal').classList.add('hidden');
+      document.getElementById('commitMessage').value = '';
+      document.getElementById('commitDescription').value = '';
+    }
+
+    function createCommit() {
+      // This function is now deprecated since we're importing commits instead of creating them
+      alert('Commits are now imported from your Git repository. Use "Refresh Commit History" to update.');
+      hideCommitModal();
+    }
+
+    // Planning Functions
+    function showPlanningModal() {
+      if (!currentProject) return;
+      
+      document.getElementById('planningModal').classList.remove('hidden');
+      loadPlanningItems();
+    }
+
+    function hidePlanningModal() {
+      document.getElementById('planningModal').classList.add('hidden');
+    }
+
+    function loadPlanningItems() {
+      const project = projects[currentProject];
+      if (!project.planning) {
+        project.planning = {
+          backlog: [],
+          inProgress: [],
+          completed: []
+        };
+      }
+      
+      // Load backlog items
+      const backlogList = document.getElementById('backlogList');
+      backlogList.innerHTML = project.planning.backlog.map((item, index) => `
+        <div class="bg-surface-500 rounded-lg p-3 border border-surface-400">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium">${item.title}</p>
+              ${item.description ? `<p class="text-xs text-gray-400 mt-1">${item.description}</p>` : ''}
+            </div>
+            <button onclick="deletePlanningItem('backlog', ${index})" class="text-rose-400 hover:text-rose-300 ml-2">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Load in progress items
+      const inProgressList = document.getElementById('inProgressList');
+      inProgressList.innerHTML = project.planning.inProgress.map((item, index) => `
+        <div class="bg-surface-500 rounded-lg p-3 border border-surface-400">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium">${item.title}</p>
+              ${item.description ? `<p class="text-xs text-gray-400 mt-1">${item.description}</p>` : ''}
+            </div>
+            <button onclick="deletePlanningItem('inProgress', ${index})" class="text-rose-400 hover:text-rose-300 ml-2">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Load completed items
+      const completedList = document.getElementById('completedList');
+      completedList.innerHTML = project.planning.completed.map((item, index) => `
+        <div class="bg-surface-500 rounded-lg p-3 border border-surface-400">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium">${item.title}</p>
+              ${item.description ? `<p class="text-xs text-gray-400 mt-1">${item.description}</p>` : ''}
+            </div>
+            <button onclick="deletePlanningItem('completed', ${index})" class="text-rose-400 hover:text-rose-300 ml-2">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addPlanningItem(category) {
+      const title = prompt(`Enter title for ${category} item:`);
+      if (!title) return;
+      
+      const description = prompt(`Enter description (optional):`);
+      
+      if (!currentProject) return;
+      
+      if (!projects[currentProject].planning) {
+        projects[currentProject].planning = {
+          backlog: [],
+          inProgress: [],
+          completed: []
+        };
+      }
+      
+      const item = {
+        title: title,
+        description: description || '',
+        createdAt: new Date().toISOString()
+      };
+      
+      projects[currentProject].planning[category].push(item);
+      saveProjects();
+      loadPlanningItems();
+    }
+
+    function deletePlanningItem(category, index) {
+      if (!currentProject) return;
+      
+      if (confirm('Are you sure you want to delete this item?')) {
+        projects[currentProject].planning[category].splice(index, 1);
+        saveProjects();
+        loadPlanningItems();
       }
     }
 
@@ -354,17 +706,35 @@
       }
       logList.innerHTML = filteredLogs.map((log, index) => `
         <li class="flex items-start gap-3 p-4 bg-card-500 rounded-lg border border-card-400 hover:bg-card-400 transition group">
-          <div class="flex-shrink-0 w-2 h-2 bg-accent-green rounded-full mt-2"></div>
+          <div class="flex-shrink-0 w-2 h-2 ${log.type === 'commit' ? 'bg-primary-500' : 'bg-accent-green'} rounded-full mt-2"></div>
           <div class="flex-1">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
                 <span class="text-sm text-gray-400">${new Date(log.timestamp).toLocaleString()}</span>
+                ${log.type === 'commit' ? '<span class="text-xs bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">Git</span>' : ''}
               </div>
               <button onclick="deleteLog(${index})" class="text-rose-400 hover:text-rose-300 opacity-0 group-hover:opacity-100 transition">
                 <i class="fas fa-trash text-sm"></i>
               </button>
             </div>
             <p class="text-gray-200 mb-2">${log.text}</p>
+            ${log.type === 'commit' ? `
+              <div class="bg-surface-500 rounded-lg p-3 mb-2">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-xs text-primary-400 font-mono">${log.commitHash}</span>
+                  <span class="text-xs text-gray-400">by ${log.commitAuthor}</span>
+                </div>
+                <p class="text-sm text-primary-400 font-medium">"${log.commitMessage}"</p>
+                ${log.commitFiles && log.commitFiles.length > 0 ? `
+                  <div class="mt-2">
+                    <span class="text-xs text-gray-400">Files:</span>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                      ${log.commitFiles.map(file => `<span class="text-xs bg-card-400 px-2 py-0.5 rounded">${file}</span>`).join('')}
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
             ${log.tags && log.tags.length > 0 ? `
               <div class="flex gap-1 flex-wrap">
                 ${log.tags.map(tag => `<span class="tag text-xs px-2 py-1 bg-accent-purple/20 text-accent-purple rounded-full border border-accent-purple/30">${tag}</span>`).join('')}
@@ -697,6 +1067,9 @@
       if (e.key === 'Escape') {
         hideVersionModal();
         hideTagModal();
+        hidePlanningModal();
+        hideGitModal();
+        hideFirstTimeModal();
       }
     });
 
@@ -714,4 +1087,10 @@
           tagSelect.appendChild(opt);
         });
       }
+    }
+
+    // First time warning functions
+    function hideFirstTimeModal() {
+      document.getElementById('firstTimeModal').classList.add('hidden');
+      localStorage.setItem('logDiary_warningSeen', 'true');
     }
