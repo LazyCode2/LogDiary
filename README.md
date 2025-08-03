@@ -26,17 +26,11 @@ A simple, elegant project tracking app for developers who want to keep a log of 
 - **Local storage**: Your data stays on your device
 - **No signup**: Just start using it immediately
 
-## Quick tips
-
-- Use `Ctrl+N` to focus the new project input
-- Use `Ctrl+Enter` to quickly add logs
-- Press `Escape` to close any modal
-- Tags help you filter and organize your logs
-
 ## Data storage
 
 Currently uses browser localStorage. Your data is saved locally on your device. Consider exporting regularly as a backup.
 
 ---
+
 
 Made with ❤️ for developers who just want to track their progress without the overhead. 
