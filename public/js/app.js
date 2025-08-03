@@ -1,17 +1,14 @@
-    // Data storage
     let projects = JSON.parse(localStorage.getItem('logDiary_projects') || '{}');
     let currentProject = localStorage.getItem('logDiary_currentProject') || null;
 
-    // --- Search & Filter State ---
     let logSearchKeyword = '';
     let logDateFilter = '';
     let logTagFilter = '';
+    let hideCommits = false;
 
-    // Initialize app
     document.addEventListener('DOMContentLoaded', function() {
       loadProjects();
       
-      // Check if this is the first time
       const hasSeenWarning = localStorage.getItem('logDiary_warningSeen');
       if (!hasSeenWarning) {
         document.getElementById('firstTimeModal').classList.remove('hidden');
@@ -23,7 +20,6 @@
         selectProject(currentProject);
       }
       
-      // Add enter key listeners
       document.getElementById('projectName').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') addProject();
       });
@@ -32,10 +28,8 @@
         if (e.key === 'Enter') addLog();
       });
 
-      // Setup export/import
       setupExportImport();
 
-      // --- Event Listeners for Search & Filter ---
       const searchInput = document.getElementById('logSearchInput');
       const dateInput = document.getElementById('logDateFilter');
       const tagSelect = document.getElementById('logTagFilter');
@@ -59,7 +53,29 @@
       }
     });
 
-    // Dashboard functions
+    function hideFirstTimeModal() {
+      document.getElementById('firstTimeModal').classList.add('hidden');
+      localStorage.setItem('logDiary_warningSeen', 'true');
+    }
+
+    function toggleCommitsFilter() {
+      hideCommits = !hideCommits;
+      const button = document.getElementById('hideCommitsToggle');
+      const text = document.getElementById('hideCommitsText');
+      
+      if (hideCommits) {
+        button.classList.remove('bg-card-500');
+        button.classList.add('bg-primary-500/20', 'border', 'border-primary-500/30');
+        text.textContent = 'Show Commits';
+      } else {
+        button.classList.remove('bg-primary-500/20', 'border', 'border-primary-500/30');
+        button.classList.add('bg-card-500');
+        text.textContent = 'Hide Commits';
+      }
+      
+      loadLogs();
+    }
+
     function showDashboard() {
       currentProject = null;
       localStorage.removeItem('logDiary_currentProject');
@@ -72,7 +88,6 @@
       updateRecentActivity();
       updateProgressInsights();
       
-      // Update project list selection
       document.querySelectorAll('#projectList li').forEach(li => {
         li.classList.remove('bg-primary-500/20', 'border-primary-500/30');
         li.classList.add('bg-card-500', 'border-card-400');
@@ -89,7 +104,6 @@
       const totalProjects = Object.keys(projects).length;
       const totalLogs = Object.values(projects).reduce((sum, project) => sum + (project.logs?.length || 0), 0);
       
-      // Calculate weekly logs
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       const weeklyLogs = Object.values(projects).reduce((sum, project) => {
@@ -97,7 +111,6 @@
         return sum + project.logs.filter(log => new Date(log.timestamp) > weekAgo).length;
       }, 0);
       
-      // Calculate total unique tags
       const allTags = new Set();
       Object.values(projects).forEach(project => {
         if (project.tags) {
@@ -114,7 +127,6 @@
     function updateRecentActivity() {
       const recentActivityContainer = document.getElementById('recentActivity');
       
-      // Get all logs from all projects and sort by timestamp
       const allLogs = [];
       Object.entries(projects).forEach(([projectName, project]) => {
         if (project.logs) {
@@ -170,7 +182,6 @@
           </div>
         `;
       } else {
-        // Calculate some basic insights
         const totalLogs = Object.values(projects).reduce((sum, project) => sum + (project.logs?.length || 0), 0);
         const avgLogsPerProject = totalLogs > 0 ? (totalLogs / totalProjects).toFixed(1) : 0;
         
@@ -222,7 +233,6 @@
       return `${diffDays}d ago`;
     }
 
-    // Project functions
     function loadProjects() {
       const projectList = document.getElementById('projectList');
       projectList.innerHTML = '';
@@ -248,7 +258,6 @@
         projectList.appendChild(li);
       });
       
-      // Update dashboard if it's currently shown
       if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
         updateDashboardStats();
         updateRecentActivity();
@@ -290,23 +299,19 @@
       
       showProjectView();
       
-      // Update UI
       document.getElementById('currentProjectTitle').innerHTML = `
         <i class="fas fa-book text-primary-500"></i>
         <span>${projectName}</span>
       `;
       
-      // Show version and project controls
       document.getElementById('versionDisplay').classList.remove('hidden');
       document.getElementById('deleteProjectBtn').classList.remove('hidden');
       document.getElementById('manageTagsBtn').classList.remove('hidden');
       document.getElementById('planningBtn').classList.remove('hidden');
       document.getElementById('gitBtn').classList.remove('hidden');
       
-      // Update version display
       document.getElementById('currentVersion').textContent = projects[projectName].version || '1.0.0';
       
-      // Update Git status if connected
       if (projects[projectName].gitRepo) {
         document.getElementById('gitStatusDisplay').classList.remove('hidden');
         document.getElementById('gitPanel').classList.remove('hidden');
@@ -318,13 +323,11 @@
         document.getElementById('gitPanel').classList.add('hidden');
       }
       
-      // Update project list highlighting
       document.querySelectorAll('#projectList li').forEach(li => {
         li.classList.remove('bg-primary-500/20', 'border-primary-500/30');
         li.classList.add('bg-card-500', 'border-card-400');
       });
       
-      // Highlight current project
       const currentLi = Array.from(document.querySelectorAll('#projectList li')).find(li => 
         li.textContent.includes(projectName)
       );
@@ -348,7 +351,6 @@
       }
     }
 
-    // Git Integration Functions
     function showGitModal() {
       if (!currentProject) {
         alert('Please select a project first');
@@ -357,7 +359,6 @@
       
       document.getElementById('gitModal').classList.remove('hidden');
       
-      // Pre-fill if already connected
       if (projects[currentProject].gitRepo && projects[currentProject].gitRepo.url) {
         document.getElementById('gitRepoInput').value = projects[currentProject].gitRepo.url;
       }
@@ -388,10 +389,15 @@
         return;
       }
       
-      // Extract repo name from URL
       let repoName = repoUrl.split('/').pop().replace('.git', '');
+      let owner = '';
+      
       if (repoName.includes(':')) {
         repoName = repoName.split(':').pop().replace('.git', '');
+        owner = repoUrl.split(':')[1].split('/')[0];
+      } else {
+        const urlParts = repoUrl.split('/');
+        owner = urlParts[urlParts.length - 2];
       }
       
       if (!currentProject) {
@@ -405,97 +411,169 @@
       
       projects[currentProject].gitRepo.url = repoUrl;
       projects[currentProject].gitRepo.name = repoName;
+      projects[currentProject].gitRepo.owner = owner;
       projects[currentProject].gitRepo.branch = 'main';
       projects[currentProject].gitRepo.connected = true;
+      projects[currentProject].gitRepo.lastSync = new Date().toISOString();
       
       saveProjects();
       
-      // Update UI
       document.getElementById('gitStatusDisplay').classList.remove('hidden');
       document.getElementById('gitPanel').classList.remove('hidden');
       document.getElementById('gitRepoName').textContent = repoName;
       document.getElementById('gitBranch').textContent = 'main';
       
-      // Import commit history
       importCommitHistory();
       
       hideGitModal();
       alert('Repository connected successfully! Commit history will be imported.');
     }
 
-    function importCommitHistory() {
+    async function importCommitHistory() {
       if (!currentProject || !projects[currentProject].gitRepo) return;
       
-      // Simulate importing commit history from Git
-      // In a real implementation, this would call Git commands or API
-      const mockCommits = [
-        {
-          hash: 'a1b2c3d',
-          message: 'Initial commit',
-          author: 'Developer',
-          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          files: ['README.md', 'package.json']
-        },
-        {
-          hash: 'e4f5g6h',
-          message: 'Add basic functionality',
-          author: 'Developer',
-          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          files: ['app.js', 'index.html']
-        },
-        {
-          hash: 'i7j8k9l',
-          message: 'Fix UI issues',
-          author: 'Developer',
-          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          files: ['styles.css', 'app.js']
-        },
-        {
-          hash: 'm1n2o3p',
-          message: 'Add Git integration',
-          author: 'Developer',
-          date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          files: ['git.js', 'app.js']
-        }
-      ];
+      const repo = projects[currentProject].gitRepo;
+      const owner = repo.owner;
+      const repoName = repo.name;
       
-      // Convert commits to log entries
-      mockCommits.forEach(commit => {
-        const commitLog = {
-          text: `Git commit: ${commit.message}`,
-          timestamp: commit.date,
-          tags: ['git', 'commit'],
-          type: 'commit',
-          commitHash: commit.hash,
-          commitMessage: commit.message,
-          commitAuthor: commit.author,
-          commitFiles: commit.files
-        };
+      const gitStatusContent = document.getElementById('gitStatusContent');
+      gitStatusContent.innerHTML = `
+        <div class="p-4 text-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-2"></div>
+          <p class="text-sm text-gray-400">Fetching commit history...</p>
+        </div>
+      `;
+      
+      try {
+        const commits = await fetchGitHubCommits(owner, repoName);
         
-        if (!projects[currentProject].logs) {
-          projects[currentProject].logs = [];
+        commits.forEach(commit => {
+          const commitLog = {
+            text: `Git commit: ${commit.commit.message}`,
+            timestamp: commit.commit.author.date,
+            tags: ['git', 'commit'],
+            type: 'commit',
+            commitHash: commit.sha,
+            commitMessage: commit.commit.message,
+            commitAuthor: commit.commit.author.name,
+            commitFiles: commit.files ? commit.files.map(file => file.filename) : []
+          };
+          
+          if (!projects[currentProject].logs) {
+            projects[currentProject].logs = [];
+          }
+          
+          const existingCommit = projects[currentProject].logs.find(log => 
+            log.type === 'commit' && log.commitHash === commit.sha
+          );
+          
+          if (!existingCommit) {
+            projects[currentProject].logs.push(commitLog);
+          }
+        });
+        
+        projects[currentProject].gitRepo.lastSync = new Date().toISOString();
+        saveProjects();
+        loadLogs();
+        updateGitStatus();
+        
+        if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
+          updateDashboardStats();
+          updateRecentActivity();
+          updateProgressInsights();
         }
         
-        // Check if commit already exists to avoid duplicates
-        const existingCommit = projects[currentProject].logs.find(log => 
-          log.type === 'commit' && log.commitHash === commit.hash
-        );
-        
-        if (!existingCommit) {
-          projects[currentProject].logs.push(commitLog);
+      } catch (error) {
+        console.error('Error fetching GitHub commits:', error);
+        alert('Error fetching commit history. Please check your repository URL and try again.');
+      }
+    }
+
+    async function fetchGitHubCommits(owner, repo) {
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=30`;
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'LogDiary-App'
         }
       });
       
-      saveProjects();
-      loadLogs();
-      updateGitStatus();
-      
-      // Update dashboard if needed
-      if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
-        updateDashboardStats();
-        updateRecentActivity();
-        updateProgressInsights();
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Repository not found. Please check the repository URL.');
+        } else if (response.status === 403) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        } else {
+          throw new Error(`GitHub API error: ${response.status}`);
+        }
       }
+      
+      const commits = await response.json();
+      
+      const commitsWithFiles = await Promise.all(
+        commits.map(async (commit) => {
+          try {
+            const commitResponse = await fetch(commit.url, {
+              headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'LogDiary-App'
+              }
+            });
+            
+            if (commitResponse.ok) {
+              const commitData = await commitResponse.json();
+              return {
+                ...commit,
+                files: commitData.files || []
+              };
+            }
+            
+            return commit;
+          } catch (error) {
+            console.warn('Error fetching commit details:', error);
+            return commit;
+          }
+        })
+      );
+      
+      return commitsWithFiles;
+    }
+
+    function generateMockCommits(repoName, lastSync) {
+      const commitMessages = [
+        'Initial commit',
+        'Add basic functionality',
+        'Fix UI issues',
+        'Add new features',
+        'Update documentation',
+        'Bug fixes and improvements',
+        'Refactor code structure',
+        'Add tests',
+        'Performance optimizations',
+        'Security updates'
+      ];
+      
+      const authors = ['Developer', 'Team Lead', 'Contributor', 'Maintainer'];
+      const files = ['app.js', 'index.html', 'styles.css', 'package.json', 'README.md', 'config.js', 'utils.js', 'api.js'];
+      
+      const commits = [];
+      const baseTime = lastSync ? new Date(lastSync) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      
+      for (let i = 0; i < Math.floor(Math.random() * 8) + 3; i++) {
+        const commitTime = new Date(baseTime.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000);
+        const commitFiles = files.slice(0, Math.floor(Math.random() * 4) + 1);
+        
+        commits.push({
+          hash: Math.random().toString(36).substring(2, 9),
+          message: commitMessages[Math.floor(Math.random() * commitMessages.length)],
+          author: authors[Math.floor(Math.random() * authors.length)],
+          date: commitTime.toISOString(),
+          files: commitFiles
+        });
+      }
+      
+      return commits.sort((a, b) => new Date(a.date) - new Date(b.date));
     }
 
     function updateGitStatus() {
@@ -503,16 +581,20 @@
       
       const gitStatusContent = document.getElementById('gitStatusContent');
       
-      // Count commits in logs
       const commitLogs = projects[currentProject].logs?.filter(log => log.type === 'commit') || [];
       const totalCommits = commitLogs.length;
-      const recentCommits = commitLogs.slice(-3); // Last 3 commits
+      const recentCommits = commitLogs.slice(-3);
+      const lastSync = projects[currentProject].gitRepo.lastSync;
       
       const statusHTML = `
         <div class="p-4 space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-sm font-medium">Total Commits</span>
             <span class="text-primary-400 font-semibold">${totalCommits}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium">Last Sync</span>
+            <span class="text-xs text-gray-400">${lastSync ? formatTimeAgo(lastSync) : 'Never'}</span>
           </div>
           <div class="border-t border-surface-500 my-2"></div>
           <div class="text-sm">
@@ -530,7 +612,7 @@
           </div>
           <div class="border-t border-surface-500 my-2"></div>
           <button onclick="importCommitHistory()" class="w-full px-3 py-2 bg-primary-500 rounded-lg hover:bg-primary-600 transition-colors text-sm">
-            <i class="fas fa-sync-alt"></i> Refresh Commit History
+            <i class="fas fa-sync-alt"></i> Sync Commit History
           </button>
         </div>
       `;
@@ -538,28 +620,15 @@
       gitStatusContent.innerHTML = statusHTML;
     }
 
-    function refreshGitStatus() {
-      importCommitHistory();
+    async function refreshGitStatus() {
+      try {
+        await importCommitHistory();
+      } catch (error) {
+        console.error('Error refreshing Git status:', error);
+        alert('Error refreshing commit history. Please try again.');
+      }
     }
 
-    function showCommitModal() {
-      // This function is now deprecated since we're importing commits instead of creating them
-      alert('Commits are now imported from your Git repository. Use "Refresh Commit History" to update.');
-    }
-
-    function hideCommitModal() {
-      document.getElementById('commitModal').classList.add('hidden');
-      document.getElementById('commitMessage').value = '';
-      document.getElementById('commitDescription').value = '';
-    }
-
-    function createCommit() {
-      // This function is now deprecated since we're importing commits instead of creating them
-      alert('Commits are now imported from your Git repository. Use "Refresh Commit History" to update.');
-      hideCommitModal();
-    }
-
-    // Planning Functions
     function showPlanningModal() {
       if (!currentProject) return;
       
@@ -581,7 +650,6 @@
         };
       }
       
-      // Load backlog items
       const backlogList = document.getElementById('backlogList');
       backlogList.innerHTML = project.planning.backlog.map((item, index) => `
         <div class="bg-surface-500 rounded-lg p-3 border border-surface-400">
@@ -597,7 +665,6 @@
         </div>
       `).join('');
       
-      // Load in progress items
       const inProgressList = document.getElementById('inProgressList');
       inProgressList.innerHTML = project.planning.inProgress.map((item, index) => `
         <div class="bg-surface-500 rounded-lg p-3 border border-surface-400">
@@ -613,7 +680,6 @@
         </div>
       `).join('');
       
-      // Load completed items
       const completedList = document.getElementById('completedList');
       completedList.innerHTML = project.planning.completed.map((item, index) => `
         <div class="bg-surface-500 rounded-lg p-3 border border-surface-400">
@@ -667,8 +733,6 @@
       }
     }
 
-    // Log functions
-    // --- Enhanced loadLogs with Search & Filter ---
     function loadLogs() {
       const logList = document.getElementById('logList');
       const project = projects[currentProject];
@@ -683,17 +747,17 @@
         return;
       }
       let filteredLogs = project.logs;
-      // Filter by keyword
       if (logSearchKeyword) {
         filteredLogs = filteredLogs.filter(log => log.text.toLowerCase().includes(logSearchKeyword));
       }
-      // Filter by date
       if (logDateFilter) {
         filteredLogs = filteredLogs.filter(log => log.timestamp && log.timestamp.startsWith(logDateFilter));
       }
-      // Filter by tag
       if (logTagFilter) {
         filteredLogs = filteredLogs.filter(log => log.tags && log.tags.includes(logTagFilter));
+      }
+      if (hideCommits) {
+        filteredLogs = filteredLogs.filter(log => log.type !== 'commit');
       }
       if (filteredLogs.length === 0) {
         logList.innerHTML = `
@@ -767,14 +831,12 @@
       saveProjects();
       loadLogs();
       
-      // Clear input and selected tags
       logInput.value = '';
       document.querySelectorAll('#quickTagsContainer .tag').forEach(tag => {
         tag.classList.remove('selected', 'bg-accent-purple', 'text-white');
         tag.classList.add('bg-accent-purple/20', 'text-accent-purple');
       });
       
-      // Update dashboard if needed
       if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
         updateDashboardStats();
         updateRecentActivity();
@@ -799,7 +861,6 @@
       saveProjects();
       loadLogs();
       
-      // Update dashboard if needed
       if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
         updateDashboardStats();
         updateRecentActivity();
@@ -815,7 +876,6 @@
         saveProjects();
         loadLogs();
         
-        // Update dashboard if needed
         if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
           updateDashboardStats();
           updateRecentActivity();
@@ -824,7 +884,6 @@
       }
     }
 
-    // Tag functions
     function loadTags() {
       const quickTagsContainer = document.getElementById('quickTagsContainer');
       const project = projects[currentProject];
@@ -903,7 +962,6 @@
       loadTags();
       newTagInput.value = '';
       
-      // Update dashboard if needed
       if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
         updateDashboardStats();
       }
@@ -915,7 +973,6 @@
       if (confirm(`Are you sure you want to delete the tag "${tagName}"?`)) {
         projects[currentProject].tags = projects[currentProject].tags.filter(tag => tag !== tagName);
         
-        // Remove tag from all logs
         if (projects[currentProject].logs) {
           projects[currentProject].logs.forEach(log => {
             if (log.tags) {
@@ -929,7 +986,6 @@
         loadTags();
         loadLogs();
         
-        // Update dashboard if needed
         if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
           updateDashboardStats();
           updateRecentActivity();
@@ -937,7 +993,6 @@
       }
     }
 
-    // Version functions
     function showVersionModal() {
       if (!currentProject) return;
       
@@ -961,12 +1016,10 @@
       hideVersionModal();
     }
 
-    // Storage functions
     function saveProjects() {
       localStorage.setItem('logDiary_projects', JSON.stringify(projects));
     }
 
-    // Export/Import functions
     function setupExportImport() {
       document.getElementById('export-app-btn').addEventListener('click', exportAllProjects);
       document.getElementById('import-app-input').addEventListener('change', importProjects);
@@ -1025,10 +1078,8 @@
           const importData = JSON.parse(content);
           
           if (importData.projects) {
-            // Full backup import
             Object.assign(projects, importData.projects);
           } else {
-            // Single project import
             Object.assign(projects, importData);
           }
           
@@ -1045,35 +1096,9 @@
         console.error(error);
       });
       
-      // Reset file input
       event.target.value = '';
     }
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-      // Ctrl/Cmd + N: New Project
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault();
-        document.getElementById('projectName').focus();
-      }
-      
-      // Ctrl/Cmd + Enter: Add Log (when log input is focused)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === document.getElementById('logInput')) {
-        e.preventDefault();
-        addLog();
-      }
-      
-      // Escape: Close modals
-      if (e.key === 'Escape') {
-        hideVersionModal();
-        hideTagModal();
-        hidePlanningModal();
-        hideGitModal();
-        hideFirstTimeModal();
-      }
-    });
-
-    // --- Update Tag Filter Dropdown ---
     function updateTagFilterDropdown() {
       const tagSelect = document.getElementById('logTagFilter');
       const project = projects[currentProject];
@@ -1089,8 +1114,22 @@
       }
     }
 
-    // First time warning functions
-    function hideFirstTimeModal() {
-      document.getElementById('firstTimeModal').classList.add('hidden');
-      localStorage.setItem('logDiary_warningSeen', 'true');
-    }
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        document.getElementById('projectName').focus();
+      }
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === document.getElementById('logInput')) {
+        e.preventDefault();
+        addLog();
+      }
+      
+      if (e.key === 'Escape') {
+        hideVersionModal();
+        hideTagModal();
+        hidePlanningModal();
+        hideGitModal();
+        hideFirstTimeModal();
+      }
+    });
