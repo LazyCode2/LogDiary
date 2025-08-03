@@ -114,8 +114,8 @@
       overflow-y: auto;
     }
     .log-list-container {
-      max-height: calc(100vh - 500px);
-      min-height: 400px;
+      max-height: calc(100vh - 450px);
+      min-height: 500px;
       overflow-y: auto;
       padding-right: 8px;
       margin-bottom: 20px;
@@ -381,6 +381,10 @@
           <select id="logTagFilter" class="p-2 rounded-lg bg-card-500 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 border border-card-400 transition-colors">
             <option value="">All Tags</option>
           </select>
+          <button id="hideCommitsToggle" onclick="toggleCommitsFilter()" class="px-3 py-2 bg-card-500 rounded-lg hover:bg-card-400 transition-colors text-sm flex items-center gap-2">
+            <i class="fas fa-code-branch"></i>
+            <span id="hideCommitsText">Hide Commits</span>
+          </button>
         </div>
         <div class="bg-surface-600 rounded-xl p-4 border border-surface-500">
           <div class="log-list-container">
@@ -586,6 +590,12 @@
             <li>• https://github.com/username/repository</li>
             <li>• git@github.com:username/repository.git</li>
           </ul>
+          <div class="mt-3 p-2 bg-accent-amber/10 border border-accent-amber/20 rounded">
+            <p class="text-xs text-accent-amber">
+              <i class="fas fa-info-circle mr-1"></i>
+              Uses GitHub API (public repos only, rate limited)
+            </p>
+          </div>
         </div>
         <div class="flex justify-end gap-3">
           <button onclick="hideGitModal()" class="px-4 py-2 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">
