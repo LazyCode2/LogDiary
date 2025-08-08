@@ -20,6 +20,13 @@
         selectProject(currentProject);
       }
       
+      // Restore hideCommits preference
+      hideCommits = localStorage.getItem('logDiary_hideCommits') === 'true';
+      applyHideCommitsState();
+      
+      // Apply input bar state after DOM is ready
+      applyInputBarState();
+      
       document.getElementById('projectName').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') addProject();
       });
@@ -60,6 +67,7 @@
 
     function toggleCommitsFilter() {
       hideCommits = !hideCommits;
+      localStorage.setItem('logDiary_hideCommits', hideCommits.toString());
       const button = document.getElementById('hideCommitsToggle');
       const text = document.getElementById('hideCommitsText');
       
@@ -74,6 +82,21 @@
       }
       
       loadLogs();
+    }
+
+    function applyHideCommitsState() {
+      const button = document.getElementById('hideCommitsToggle');
+      const text = document.getElementById('hideCommitsText');
+      if (!button || !text) return;
+      if (hideCommits) {
+        button.classList.remove('bg-card-500');
+        button.classList.add('bg-primary-500/20', 'border', 'border-primary-500/30');
+        text.textContent = 'Show Commits';
+      } else {
+        button.classList.remove('bg-primary-500/20', 'border', 'border-primary-500/30');
+        button.classList.add('bg-card-500');
+        text.textContent = 'Hide Commits';
+      }
     }
 
     function showDashboard() {
@@ -98,6 +121,9 @@
       document.getElementById('dashboardView').classList.add('hidden');
       document.getElementById('projectView').classList.remove('hidden');
       document.getElementById('fixedInputBar').classList.remove('hidden');
+      
+      // input bar 
+      applyInputBarState();
     }
 
     function updateDashboardStats() {
@@ -239,7 +265,7 @@
       
       Object.keys(projects).forEach(projectName => {
         const li = document.createElement('li');
-        li.className = 'p-3 rounded-lg cursor-pointer transition border bg-card-500 border-card-400 hover:bg-card-300';
+        li.className = 'group p-3 rounded-lg cursor-pointer transition border bg-card-500 border-card-400 hover:bg-card-300';
         li.innerHTML = `
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -270,7 +296,7 @@
       if (!projectName) return;
       
       if (projects[projectName]) {
-        alert('Project already exists!');
+        showToast('Project already exists', 'error');
         return;
       }
       
@@ -291,9 +317,18 @@
       loadProjects();
       selectProject(projectName);
       document.getElementById('projectName').value = '';
+      showToast('Project created', 'success');
     }
 
     function selectProject(projectName) {
+      if (!projects[projectName]) {
+        // Fallback if project was removed or name is invalid
+        currentProject = null;
+        localStorage.removeItem('logDiary_currentProject');
+        showDashboard();
+        return;
+      }
+
       currentProject = projectName;
       localStorage.setItem('logDiary_currentProject', projectName);
       
@@ -343,17 +378,19 @@
     function deleteProject() {
       if (!currentProject) return;
       
-      if (confirm(`Are you sure you want to delete "${currentProject}"? This action cannot be undone.`)) {
+      safeConfirm(`Are you sure you want to delete "${currentProject}"? This action cannot be undone.`).then((ok) => {
+        if (!ok) return;
         delete projects[currentProject];
         saveProjects();
         loadProjects();
         showDashboard();
-      }
+        showToast('Project deleted', 'info');
+      });
     }
 
     function showGitModal() {
       if (!currentProject) {
-        alert('Please select a project first');
+        showToast('Please select a project first', 'error');
         return;
       }
       
@@ -385,7 +422,7 @@
     function connectGitRepo() {
       const repoUrl = document.getElementById('gitRepoInput').value.trim();
       if (!repoUrl) {
-        alert('Please enter a repository URL');
+        showToast('Please enter a repository URL', 'error');
         return;
       }
       
@@ -401,7 +438,7 @@
       }
       
       if (!currentProject) {
-        alert('Please select a project first');
+        showToast('Please select a project first', 'error');
         return;
       }
       
@@ -426,7 +463,7 @@
       importCommitHistory();
       
       hideGitModal();
-      alert('Repository connected successfully! Commit history will be imported.');
+      showToast('Repository connected. Importing commits...', 'success');
     }
 
     async function importCommitHistory() {
@@ -485,7 +522,7 @@
         
       } catch (error) {
         console.error('Error fetching GitHub commits:', error);
-        alert('Error fetching commit history. Please check your repository URL and try again.');
+        showToast('Error fetching commit history', 'error');
       }
     }
 
@@ -746,20 +783,24 @@
         `;
         return;
       }
-      let filteredLogs = project.logs;
+
+      // Build working list with original indices
+      let working = project.logs.map((log, originalIndex) => ({ log, originalIndex }));
+
       if (logSearchKeyword) {
-        filteredLogs = filteredLogs.filter(log => log.text.toLowerCase().includes(logSearchKeyword));
+        working = working.filter(item => item.log.text.toLowerCase().includes(logSearchKeyword));
       }
       if (logDateFilter) {
-        filteredLogs = filteredLogs.filter(log => log.timestamp && log.timestamp.startsWith(logDateFilter));
+        working = working.filter(item => item.log.timestamp && item.log.timestamp.startsWith(logDateFilter));
       }
       if (logTagFilter) {
-        filteredLogs = filteredLogs.filter(log => log.tags && log.tags.includes(logTagFilter));
+        working = working.filter(item => item.log.tags && item.log.tags.includes(logTagFilter));
       }
       if (hideCommits) {
-        filteredLogs = filteredLogs.filter(log => log.type !== 'commit');
+        working = working.filter(item => item.log.type !== 'commit');
       }
-      if (filteredLogs.length === 0) {
+
+      if (working.length === 0) {
         logList.innerHTML = `
           <li class="text-center py-8 text-gray-500">
             <i class="fas fa-search text-4xl mb-3 opacity-50"></i>
@@ -768,7 +809,8 @@
         `;
         return;
       }
-      logList.innerHTML = filteredLogs.map((log, index) => `
+
+      logList.innerHTML = working.map(({ log, originalIndex }) => `
         <li class="flex items-start gap-3 p-4 bg-card-500 rounded-lg border border-card-400 hover:bg-card-400 transition group">
           <div class="flex-shrink-0 w-2 h-2 ${log.type === 'commit' ? 'bg-primary-500' : 'bg-accent-green'} rounded-full mt-2"></div>
           <div class="flex-1">
@@ -777,7 +819,7 @@
                 <span class="text-sm text-gray-400">${new Date(log.timestamp).toLocaleString()}</span>
                 ${log.type === 'commit' ? '<span class="text-xs bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">Git</span>' : ''}
               </div>
-              <button onclick="deleteLog(${index})" class="text-rose-400 hover:text-rose-300 opacity-0 group-hover:opacity-100 transition">
+              <button onclick="deleteLog(${originalIndex})" class="text-rose-400 hover:text-rose-300 opacity-0 group-hover:opacity-100 transition">
                 <i class="fas fa-trash text-sm"></i>
               </button>
             </div>
@@ -831,6 +873,8 @@
       saveProjects();
       loadLogs();
       
+      showToast('Log added', 'success');
+      
       logInput.value = '';
       document.querySelectorAll('#quickTagsContainer .tag').forEach(tag => {
         tag.classList.remove('selected', 'bg-accent-purple', 'text-white');
@@ -861,6 +905,8 @@
       saveProjects();
       loadLogs();
       
+      showToast('Quick log added', 'success');
+      
       if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
         updateDashboardStats();
         updateRecentActivity();
@@ -868,13 +914,16 @@
       }
     }
 
-    function deleteLog(index) {
+    async function deleteLog(index) {
       if (!currentProject || !projects[currentProject].logs) return;
       
-      if (confirm('Are you sure you want to delete this log entry?')) {
+      if (await safeConfirm('Are you sure you want to delete this log entry?')) {
+        // index is original index in projects[currentProject].logs
         projects[currentProject].logs.splice(index, 1);
         saveProjects();
         loadLogs();
+        
+        showToast('Log deleted', 'info');
         
         if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
           updateDashboardStats();
@@ -952,7 +1001,7 @@
       }
       
       if (projects[currentProject].tags.includes(tagName)) {
-        alert('Tag already exists!');
+        showToast('Tag already exists', 'error');
         return;
       }
       
@@ -962,6 +1011,8 @@
       loadTags();
       newTagInput.value = '';
       
+      showToast('Tag added', 'success');
+      
       if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
         updateDashboardStats();
       }
@@ -970,7 +1021,8 @@
     function deleteTag(tagName) {
       if (!currentProject) return;
       
-      if (confirm(`Are you sure you want to delete the tag "${tagName}"?`)) {
+      safeConfirm(`Are you sure you want to delete the tag "${tagName}"?`).then((ok) => {
+        if (!ok) return;
         projects[currentProject].tags = projects[currentProject].tags.filter(tag => tag !== tagName);
         
         if (projects[currentProject].logs) {
@@ -986,11 +1038,13 @@
         loadTags();
         loadLogs();
         
+        showToast('Tag deleted', 'info');
+        
         if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
           updateDashboardStats();
           updateRecentActivity();
         }
-      }
+      });
     }
 
     function showVersionModal() {
@@ -1068,7 +1122,7 @@
       JSZip.loadAsync(file).then(function(zip) {
         const jsonFile = Object.keys(zip.files).find(filename => filename.endsWith('.json'));
         if (!jsonFile) {
-          alert('Invalid backup file format!');
+          showToast('Invalid backup file format!', 'error');
           return;
         }
         
@@ -1086,13 +1140,13 @@
           saveProjects();
           loadProjects();
           showDashboard();
-          alert('Projects imported successfully!');
+          showToast('Projects imported successfully', 'success');
         } catch (error) {
-          alert('Error importing backup file!');
+          showToast('Error importing backup file', 'error');
           console.error(error);
         }
       }).catch(function(error) {
-        alert('Error reading backup file!');
+        showToast('Error reading backup file', 'error');
         console.error(error);
       });
       
@@ -1114,6 +1168,41 @@
       }
     }
 
+    // Collapsible Input Bar
+    function applyInputBarState() {
+      const isCollapsed = localStorage.getItem('logDiary_inputCollapsed') === 'true';
+      const content = document.getElementById('inputBarContent');
+      const toggleText = document.getElementById('inputBarToggleText');
+      const toggleIcon = document.getElementById('inputBarToggleIcon');
+      const fixedBar = document.getElementById('fixedInputBar');
+
+      if (!fixedBar) return;
+
+      if (isCollapsed) {
+        if (content) content.classList.remove('expanded');
+        if (toggleText) toggleText.textContent = 'Expand';
+        if (toggleIcon) {
+          toggleIcon.classList.remove('fa-chevron-up');
+          toggleIcon.classList.add('fa-chevron-down');
+        }
+      } else {
+        if (content) content.classList.add('expanded');
+        if (toggleText) toggleText.textContent = 'Collapse';
+        if (toggleIcon) {
+          toggleIcon.classList.remove('fa-chevron-down');
+          toggleIcon.classList.add('fa-chevron-up');
+        }
+        const logInput = document.getElementById('logInput');
+        if (logInput) setTimeout(() => logInput.focus(), 50);
+      }
+    }
+
+    function toggleInputBar() {
+      const isCollapsed = localStorage.getItem('logDiary_inputCollapsed') === 'true';
+      localStorage.setItem('logDiary_inputCollapsed', (!isCollapsed).toString());
+      applyInputBarState();
+    }
+
     document.addEventListener('keydown', function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
@@ -1133,3 +1222,65 @@
         hideFirstTimeModal();
       }
     });
+
+    // Toasts
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const wrap = document.createElement('div');
+      const colors = {
+        info: 'bg-card-500 border-card-400',
+        success: 'bg-accent-green/10 border-accent-green/20',
+        error: 'bg-rose-500/10 border-rose-500/20'
+      };
+      wrap.className = `px-4 py-3 rounded-lg border refined-shadow text-sm ${colors[type] || colors.info}`;
+      wrap.textContent = message;
+      container.appendChild(wrap);
+      setTimeout(() => {
+        wrap.style.opacity = '0';
+        wrap.style.transition = 'opacity 200ms ease';
+        setTimeout(() => wrap.remove(), 250);
+      }, 2500);
+    }
+
+    // Confirm Modal
+    let confirmResolver = null;
+    function showConfirm(message) {
+      return new Promise((resolve) => {
+        confirmResolver = resolve;
+        const modal = document.getElementById('confirmModal');
+        const msg = document.getElementById('confirmMessage');
+        if (msg) msg.textContent = message;
+        if (modal) modal.classList.remove('hidden');
+      });
+    }
+    function hideConfirmModal(confirmed) {
+      const modal = document.getElementById('confirmModal');
+      if (modal) modal.classList.add('hidden');
+      if (confirmResolver) {
+        confirmResolver(confirmed);
+        confirmResolver = null;
+      }
+    }
+
+    async function safeConfirm(message) {
+      // Prefer custom modal; fallback to native confirm if unavailable
+      const modal = document.getElementById('confirmModal');
+      if (!modal) return confirm(message);
+      return await showConfirm(message);
+    }
+
+    // Clear Filters
+    function clearLogFilters() {
+      const searchInput = document.getElementById('logSearchInput');
+      const dateInput = document.getElementById('logDateFilter');
+      const tagSelect = document.getElementById('logTagFilter');
+      if (searchInput) searchInput.value = '';
+      if (dateInput) dateInput.value = '';
+      if (tagSelect) tagSelect.value = '';
+      logSearchKeyword = '';
+      logDateFilter = '';
+      logTagFilter = '';
+      loadLogs();
+      showToast('Filters cleared', 'info');
+    }
