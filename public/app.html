@@ -381,10 +381,11 @@
           <select id="logTagFilter" class="p-2 rounded-lg bg-card-500 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 border border-card-400 transition-colors">
             <option value="">All Tags</option>
           </select>
-          <button id="hideCommitsToggle" onclick="toggleCommitsFilter()" class="px-3 py-2 bg-card-500 rounded-lg hover:bg-card-400 transition-colors text-sm flex items-center gap-2">
+          <button id="hideCommitsToggle" title="Toggle commit visibility" onclick="toggleCommitsFilter()" class="px-3 py-2 bg-card-500 rounded-lg hover:bg-card-400 transition-colors text-sm flex items-center gap-2">
             <i class="fas fa-code-branch"></i>
             <span id="hideCommitsText">Hide Commits</span>
           </button>
+          <button onclick="clearLogFilters()" class="px-3 py-2 bg-card-500 rounded-lg hover:bg-card-400 transition-colors text-sm">Clear</button>
         </div>
         <div class="bg-surface-600 rounded-xl p-4 border border-surface-500">
           <div class="log-list-container">
@@ -398,19 +399,30 @@
   <!-- Input Bar -->
   <div id="fixedInputBar" class="fixed-input-bar hidden">
     <div class="bg-surface-600 rounded-xl p-4 border border-surface-500">
-      <div class="flex gap-2 mb-4 flex-wrap" id="quickTagsContainer"></div>
-      <div class="flex gap-3">
-        <input id="logInput" type="text" placeholder="What did you work on today?"
-          class="flex-1 p-3 rounded-lg bg-card-500 focus:outline-none focus:ring-2 focus:ring-accent-green border border-card-400 transition-colors" />
-        <button onclick="addLog()" class="px-6 py-3 bg-accent-green rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 font-medium">
-          <i class="fas fa-plus"></i> Add
+      <div class="flex items-center justify-between mb-2 mt-2">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-pen text-accent-green"></i>
+          <span class="text-sm text-gray-400">Add Log</span>
+        </div>
+        <button id="inputBarToggle" onclick="toggleInputBar()" class="px-2 py-1 bg-card-500 rounded-lg hover:bg-card-400 transition-colors text-xs">
+          <i id="inputBarToggleIcon" class="fas fa-chevron-up"></i>
         </button>
       </div>
-      <div class="mt-4 flex gap-2 flex-wrap">
-        <button onclick="addQuickLog('Started working on the project')" class="text-xs px-3 py-1.5 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Started</button>
-        <button onclick="addQuickLog('Fixed bugs')" class="text-xs px-3 py-1.5 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Fixed bugs</button>
-        <button onclick="addQuickLog('Meeting with team')" class="text-xs px-3 py-1.5 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Meeting</button>
-        <button onclick="addQuickLog('Completed task')" class="text-xs px-3 py-1.5 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Completed</button>
+      <div id="inputBarContent" class="collapsible-content expanded">
+        <div class="flex gap-2 mb-4 flex-wrap" id="quickTagsContainer"></div>
+        <div class="flex gap-3">
+          <input id="logInput" type="text" placeholder="What did you work on today?"
+            class="flex-1 p-3 rounded-lg bg-card-500 focus:outline-none focus:ring-2 focus:ring-accent-green border border-card-400 transition-colors" />
+          <button onclick="addLog()" class="px-6 py-3 bg-accent-green rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 font-medium">
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </div>
+        <div class="mt-4 flex gap-2 flex-wrap">
+          <button onclick="addQuickLog('Started working on the project')" class="text-xs px-3 py-1.5 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Started</button>
+          <button onclick="addQuickLog('Fixed bugs')" class="text-xs px-3 py-1.5 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Fixed bugs</button>
+          <button onclick="addQuickLog('Meeting with team')" class="text-xs px-3 py-1.5 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Meeting</button>
+          <button onclick="addQuickLog('Completed task')" class="text-xs px-3 py-1.5 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Completed</button>
+        </div>
       </div>
     </div>
   </div>
@@ -605,6 +617,23 @@
             <i class="fas fa-link"></i> Connect Repository
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 space-y-2 z-50"></div>
+
+  <!-- Confirm Modal -->
+  <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-sm border border-surface-500 refined-shadow">
+      <div class="mb-4">
+        <h3 class="text-lg font-semibold">Confirm</h3>
+      </div>
+      <p id="confirmMessage" class="text-sm text-gray-300 mb-6"></p>
+      <div class="flex justify-end gap-2">
+        <button onclick="hideConfirmModal(false)" class="px-4 py-2 bg-card-500 rounded-lg hover:bg-card-400 transition-colors elegant-border">Cancel</button>
+        <button onclick="hideConfirmModal(true)" class="px-4 py-2 bg-primary-500 rounded-lg hover:bg-primary-600 transition-colors font-medium">Confirm</button>
       </div>
     </div>
   </div>
