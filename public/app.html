@@ -58,6 +58,18 @@
     body {
       font-family: 'Inter', sans-serif;
       letter-spacing: -0.025em;
+      font-size: 1.05rem; /* Slightly larger base font size */
+    }
+    h1, h2, h3, h4 {
+      font-weight: 700; /* Bolder headings for hierarchy */
+      letter-spacing: -0.03em;
+    }
+    button, .btn, .font-medium {
+      letter-spacing: 0.02em; /* Subtle spacing for buttons and labels */
+      transition: all 0.2s ease;
+    }
+    button:hover, .btn:hover {
+      transform: scale(1.03); /* Subtle scale-up effect */
     }
     ::-webkit-scrollbar {
       width: 6px;
@@ -80,10 +92,14 @@
       background: #2d2d2d;
       border: 1px solid #404040;
       transition: all 0.2s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow */
     }
     .dashboard-card:hover {
       border-color: #525252;
       transform: translateY(-1px);
+    }
+    .modal {
+      border-radius: 1rem; /* Softer radius for modals */
     }
     .stat-number {
       color: #6366f1;
@@ -147,12 +163,22 @@
       max-height: 500px;
       transition: max-height 0.3s ease-in;
     }
+    #projectList li {
+      padding: 0.75rem 1rem; /* More spacious padding */
+      transition: background-color 0.2s ease;
+      border-radius: 0.5rem;
+    }
+    #projectList li:hover {
+      background-color: #383838; /* Subtle hover background */
+    }
+    input:focus, select:focus {
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3); /* More prominent focus ring */
+      border-color: #6366f1;
+    }
   </style>
 </head>
 <body class="bg-dark-900 text-gray-100 min-h-screen">
-
   <div class="flex h-screen overflow-hidden">
-    
     <!-- Sidebar -->
     <aside class="w-72 bg-surface-600 p-6 space-y-6 shadow-elegant border-r border-surface-500 flex flex-col">
       <div class="flex justify-between items-center">
@@ -162,7 +188,6 @@
           <span class="text-xs bg-card-500 px-2 py-1 rounded-full ml-auto text-gray-300">v1.2.0</span>
         </h1>
       </div>
-
       <div class="flex gap-2">
         <button id="export-app-btn" class="flex items-center gap-2 px-3 py-2 bg-card-500 rounded-lg hover:bg-card-400 font-medium transition-colors elegant-border">
           <i class="fas fa-file-export"></i> Export
@@ -172,9 +197,6 @@
           <input id="import-app-input" type="file" accept=".zip" class="hidden">
         </label>
       </div>
-
-
-
       <div class="bg-surface-500 p-4 rounded-xl border border-surface-400">
         <input id="projectName" type="text" placeholder="New project..."
           class="w-full p-3 rounded-lg bg-card-500 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 border border-card-400 transition-colors" />
@@ -188,13 +210,11 @@
           </button>
         </div>
       </div>
-
       <div class="flex-1 overflow-hidden flex flex-col">
         <h3 class="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">Your Projects</h3>
         <ul id="projectList" class="space-y-1 overflow-y-auto flex-1 pr-1"></ul>
       </div>
     </aside>
-
     <!-- Main content -->
     <main class="flex-1 bg-dark-800 overflow-y-auto">
       <!-- Dashboard View -->
@@ -207,7 +227,6 @@
             Track your projects, log your progress, and stay organized with your development journey.
           </p>
         </div>
-
         <!-- Statistics Overview -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <div class="dashboard-card rounded-xl p-6 refined-shadow">
@@ -221,7 +240,6 @@
               </div>
             </div>
           </div>
-
           <div class="dashboard-card rounded-xl p-6 refined-shadow">
             <div class="flex items-center justify-between">
               <div>
@@ -233,7 +251,6 @@
               </div>
             </div>
           </div>
-
           <div class="dashboard-card rounded-xl p-6 refined-shadow">
             <div class="flex items-center justify-between">
               <div>
@@ -245,7 +262,6 @@
               </div>
             </div>
           </div>
-
           <div class="dashboard-card rounded-xl p-6 refined-shadow">
             <div class="flex items-center justify-between">
               <div>
@@ -258,7 +274,6 @@
             </div>
           </div>
         </div>
-
         <!-- Recent Activity -->
         <div class="dashboard-card rounded-xl p-6 refined-shadow">
           <h3 class="text-xl font-semibold mb-6 flex items-center gap-3">
@@ -272,7 +287,6 @@
             </div>
           </div>
         </div>
-
         <!-- Quick Actions -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="dashboard-card rounded-xl p-6 refined-shadow">
@@ -297,7 +311,6 @@
               </button>
             </div>
           </div>
-
           <div class="dashboard-card rounded-xl p-6 refined-shadow">
             <h3 class="text-xl font-semibold mb-6 flex items-center gap-3">
               <i class="fas fa-chart-line text-primary-500"></i>
@@ -312,7 +325,6 @@
           </div>
         </div>
       </div>
-
       <!-- Project View -->
       <div id="projectView" class="project-content p-8 max-w-4xl mx-auto space-y-6 hidden">
         <div class="flex items-center justify-between">
@@ -354,7 +366,6 @@
             </button>
           </div>
         </div>
-
         <!-- Git Integration Panel -->
         <div id="gitPanel" class="bg-surface-600 rounded-xl border border-surface-500 hidden mb-4">
           <div class="flex items-center justify-between p-3 cursor-pointer" onclick="toggleGitPanel()">
@@ -374,7 +385,6 @@
             <!-- Git status will be populated here -->
           </div>
         </div>
-
         <div class="bg-surface-600 rounded-xl p-3 border border-surface-500 mb-4 flex flex-col md:flex-row md:items-center gap-2">
           <input id="logSearchInput" type="text" placeholder="Search logs..." class="flex-1 p-2 rounded-lg bg-card-500 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 border border-card-400 transition-colors" />
           <input id="logDateFilter" type="date" class="p-2 rounded-lg bg-card-500 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 border border-card-400 transition-colors" />
@@ -395,7 +405,6 @@
       </div>
     </main>
   </div>
-
   <!-- Input Bar -->
   <div id="fixedInputBar" class="fixed-input-bar hidden">
     <div class="bg-surface-600 rounded-xl p-4 border border-surface-500">
@@ -426,10 +435,9 @@
       </div>
     </div>
   </div>
-
   <!-- Version Modal -->
   <div id="versionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-md border border-surface-500 refined-shadow">
+    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-md border border-surface-500 refined-shadow modal">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-semibold">Project Version</h3>
         <button onclick="hideVersionModal()" class="text-gray-400 hover:text-white transition-colors">
@@ -453,10 +461,9 @@
       </div>
     </div>
   </div>
-
   <!-- Tags Modal -->
   <div id="tagsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-md border border-surface-500 refined-shadow">
+    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-md border border-surface-500 refined-shadow modal">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-semibold">Manage Tags</h3>
         <button onclick="hideTagModal()" class="text-gray-400 hover:text-white transition-colors">
@@ -488,10 +495,9 @@
       </div>
     </div>
   </div>
-
   <!-- Planning Modal -->
   <div id="planningModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-4xl border border-surface-500 refined-shadow">
+    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-4xl border border-surface-500 refined-shadow modal">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-semibold">Project Planning</h3>
         <button onclick="hidePlanningModal()" class="text-gray-400 hover:text-white transition-colors">
@@ -512,7 +518,6 @@
             <i class="fas fa-plus"></i> Add Item
           </button>
         </div>
-
         <!-- In Progress -->
         <div class="bg-card-500 rounded-lg p-4">
           <h4 class="font-semibold mb-4 flex items-center gap-2">
@@ -526,7 +531,6 @@
             <i class="fas fa-plus"></i> Add Item
           </button>
         </div>
-
         <!-- Completed -->
         <div class="bg-card-500 rounded-lg p-4">
           <h4 class="font-semibold mb-4 flex items-center gap-2">
@@ -543,10 +547,9 @@
       </div>
     </div>
   </div>
-
   <!-- First Time Warning Modal -->
   <div id="firstTimeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-md border border-surface-500 refined-shadow">
+    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-md border border-surface-500 refined-shadow modal">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-semibold flex items-center gap-2">
           <i class="fas fa-info-circle text-accent-amber"></i>
@@ -576,10 +579,9 @@
       </div>
     </div>
   </div>
-
   <!-- Git Integration Modal -->
   <div id="gitModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-md border border-surface-500 refined-shadow">
+    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-md border border-surface-500 refined-shadow modal">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-semibold flex items-center gap-2">
           <i class="fab fa-github text-primary-500"></i>
@@ -620,13 +622,11 @@
       </div>
     </div>
   </div>
-
   <!-- Toasts -->
   <div id="toastContainer" class="fixed bottom-6 right-6 space-y-2 z-50"></div>
-
   <!-- Confirm Modal -->
   <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-sm border border-surface-500 refined-shadow">
+    <div class="bg-surface-600 rounded-xl p-6 w-full max-w-sm border border-surface-500 refined-shadow modal">
       <div class="mb-4">
         <h3 class="text-lg font-semibold">Confirm</h3>
       </div>
@@ -637,9 +637,7 @@
       </div>
     </div>
   </div>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="js/app.js">
-  </script>
+  <script src="js/app.js"></script>
 </body>
 </html>
